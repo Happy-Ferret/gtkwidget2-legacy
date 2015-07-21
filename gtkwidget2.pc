@@ -1,0 +1,5 @@
+Name: GtkWidget2
+Description: A GTK+ 2.x-based widget which is designed to customize easier.
+Version: 1
+Requires: gtk+-2.0
+Libs: -lgtkwidget2
