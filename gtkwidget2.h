@@ -26,7 +26,10 @@ struct GtkWidget2Class {GtkWidgetClass parent;};
 struct GtkWidget2 {
 	GtkWidget widget;
 	int index; char *label; void *data;
-	int width, height;
+	int width, height, x, y;
+	GdkWindow *canvas; GdkWindowAttr settings;
+	
+	char fixed_size, fixed_position, custom_gdk_window, custom_window_attr;
 	
 	gboolean (* draw) (GtkWidget2 *widget, GdkEventExpose *event);
 	void (* forget) (GtkWidget2 *widget);

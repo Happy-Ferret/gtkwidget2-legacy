@@ -63,7 +63,11 @@ static void gtk_widget_2_callbacks (GtkWidget2Class *class) {
 
 static void gtk_widget_2_contents (GtkWidget2 *widget) {
 	widget->index = 0; widget->label = NULL; widget->data = NULL;
-	widget->width = 1; widget->height = 1;
+	widget->width = 1; widget->height = 1; widget->x = 0; widget->y = 0;
+	widget->canvas = NULL;
+	
+	widget->fixed_size = 0; widget->fixed_position = 0; widget->custom_gdk_window = 0; widget->custom_window_attr = 0;
+	
 	widget->draw = NULL;
 }
 
@@ -72,22 +76,47 @@ static void gtk_widget_2_size_request (GtkWidget *widget, GtkRequisition *requis
 }
 
 static void gtk_widget_2_size_allocate (GtkWidget *widget, GtkAllocation *allocation) {
-	widget->allocation = *allocation;
-	if (gtk_widget_get_realized (widget) == TRUE) {gdk_window_move_resize (widget->window, allocation->x, allocation->y, allocation->width, allocation->height); ((GtkWidget2 *) widget)->width = allocation->width; ((GtkWidget2 *) widget)->height = allocation->height;}
+	widget->allocation = *allocation; GtkWidget2 *_widget = (GtkWidget2 *) widget;
+	if (gtk_widget_get_realized (widget) == TRUE) {
+		int _width, _height, _x, _y;
+		if (_widget->fixed_size == 1) {_width = _widget->width; _height = _widget->height;}
+		else {_width = allocation->width; _height = allocation->height;}
+		if (_widget->fixed_position == 1) {_x = _widget->x; _y = _widget->y;}
+		else {_x = allocation->x; _y = allocation->y;}
+		
+		gdk_window_move_resize (widget->window, _x, _y, _width, _height);
+		_widget->width = _width; _widget->height = _height; _widget->x = _x; _widget->y = _y;
+	}
 }
 
 static void gtk_widget_2_show (GtkWidget *widget) {
 	GTK_WIDGET_SET_FLAGS (widget, GTK_REALIZED);
 	
-	GdkWindowAttr status1; status1.window_type = GDK_WINDOW_CHILD; status1.x = widget->allocation.x; status1.y = widget->allocation.y; status1.width = ((GtkWidget2 *) widget)->width; status1.height = ((GtkWidget2 *) widget)->height; status1.wclass = GDK_INPUT_OUTPUT; status1.event_mask = GDK_ALL_EVENTS_MASK;
-	widget->window = gdk_window_new (gtk_widget_get_parent_window (widget), &status1, GDK_WA_X | GDK_WA_Y);
+	GtkWidget2 *_widget = (GtkWidget2 *) widget;
+	if (_widget->custom_window_attr != 1) {
+		int _width, _height, _x, _y;
+		if (_widget->fixed_size == 1) {_width = _widget->width; _height = _widget->height;}
+		else {_width = widget->allocation.width; _height = widget->allocation.height;}
+		if (_widget->fixed_position == 1) {_x = _widget->x; _y = _widget->y;}
+		else {_x = widget->allocation.x; _y = widget->allocation.y;}
+		_widget->settings.width = _width; _widget->settings.height = _height;
+		_widget->settings.x = _x; _widget->settings.y = _y;
+		_widget->settings.window_type = GDK_WINDOW_CHILD; _widget->settings.wclass = GDK_INPUT_OUTPUT;
+		_widget->settings.event_mask = GDK_ALL_EVENTS_MASK;
+	}
+	
+	GdkWindow *_canvas;
+	if (_widget->custom_gdk_window == 1) _canvas = _widget->canvas;
+	else _canvas = gdk_window_new (gtk_widget_get_parent_window (widget), &(_widget->settings), GDK_WA_X | GDK_WA_Y);
+	widget->window = _canvas;
 	gdk_window_set_user_data (widget->window, widget);
 	widget->style = gtk_style_attach (widget->style, widget->window);
 	gtk_style_set_background (widget->style, widget->window, GTK_STATE_NORMAL);
 }
 
 static gboolean gtk_widget_2_refresh (GtkWidget *widget, GdkEventExpose *event) {
-	if (((GtkWidget2 *) widget)->draw != NULL) return ((GtkWidget2 *) widget)->draw ((GtkWidget2 *) widget, event); else return FALSE;
+	if (((GtkWidget2 *) widget)->draw != NULL) return ((GtkWidget2 *) widget)->draw ((GtkWidget2 *) widget, event);
+	else return FALSE;
 }
 
 static void gtk_widget_2_destroy (GtkObject *object) {
